@@ -5,9 +5,9 @@ exec ros -Q -- $0 "$@" # |#
   #+quicklisp(ql:quickload '(:hunchensocket :websocket-driver :cffi) :silent t)
   )
 
-(defpackage :ros.script.launch.3831993281
+(defpackage :ros.script.verify-code.3831993281
   (:use :cl :hunchentoot :hunchensocket :websocket-driver :cffi))
-(in-package :ros.script.launch.3831993281)
+(in-package :ros.script.verify-code.3831993281)
 
 (defun main (&rest argv)
   (declare (ignorable argv))
