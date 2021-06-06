@@ -10,15 +10,95 @@ exec ros -Q -- $0 "$@" # |#
   (:use :cl :hunchentoot :hunchensocket :websocket-driver :cffi))
 (in-package :ros.script.launch.3831993281)
 
-(hunchentoot:define-easy-handler (say-yo :uri "/yo") (name)
-  (setf (hunchentoot:content-type*) "text/plain")
+(defclass chat-room (websocket-resource)
+  ((name :initarg :name :initform (error "Name this room!") :reader name))
+  (:default-initargs :client-class 'user))
+
+(defclass pub-sub (chat-room) ())
+
+(defclass channel ()
+  ((name :initarg :name :initform (error "Name this channel!") :reader name)
+   (clients :initform nil :accessor clients)))
+
+(defclass user (websocket-client)
+  ((name :initarg :name :accessor name)
+   (request :initform *request* :accessor request)))
+
+(defclass easy-websocket-acceptor (websocket-acceptor easy-acceptor) ()
+  (:documentation "Special Easy WebSocket acceptor"))
+
+(defvar *user*)
+
+(defvar *channels* (list (make-instance 'channel :name ">b")
+			 (make-instance 'channel :name ">c")
+			 (make-instance 'channel :name ">x")
+			 (make-instance 'channel :name "b>")
+			 (make-instance 'channel :name "c>")
+			 (make-instance 'channel :name "x>")))
+
+(defvar *chat-rooms* (list (make-instance 'chat-room :name "/bongo")
+                           (make-instance 'chat-room :name "/fury")
+                           (make-instance 'pub-sub   :name "/pubsub")))
+
+(pushnew
+ (defun find-room (request)
+   (find (script-name request) *chat-rooms* :test #'string= :key #'name))
+ *websocket-dispatch-table*)
+
+(defun find-channel (name)
+  (find name *channels* :test #'string= :key #'name))
+
+(defun publish-all-but (user channel message &rest args)
+  (loop for peer in (clients channel)
+     do (if (eq user peer) T
+	    (send-text-message peer (apply #'format nil message args)))))
+
+(defun publish (channel message &rest args)
+  (loop for peer in (clients channel)
+     do (send-text-message peer (apply #'format nil message args))))
+
+(defun subscribe (user channels)
+  (loop for chan in channels
+     do (push user (users chan))))
+
+(defun unsubscribe (user channels)
+  (loop for chan in channels
+     do (setf (users chan) (remove user (users chan)))))
+
+(defun make-easy-websocket-acceptor (port document-root)
+  (make-instance 'easy-websocket-acceptor
+		 :port port :document-root document-root))
+
+(defun broadcast (room message &rest args)
+  (loop for peer in (clients room)
+        do (send-text-message peer (apply #'format nil message args))))
+
+(defmethod client-connected ((room chat-room) user)
+  (setf (name user) (format nil "new guy:~s:~s"
+			    (local-addr* (request user))
+			    (local-port* (request user))))
+  (setf (request user) nil)
+  (broadcast room "~a has joined ~a" (name user) (name room)))
+
+(defmethod client-disconnected ((room chat-room) user)
+  (broadcast room "~a has left ~a" (name user) (name room)))
+
+(defmethod text-message-received ((room chat-room) *user* message)
+  (declare (special *user*))
+  (broadcast room "~a says ~a" (name *user*) message))  
+
+(defmethod text-message-received ((room pub-sub) *user* message)
+  (declare (special *user*))
+  (format T "1 ~a) ~a says ~a~%" room (name *user*) message)
+  (eval (read-from-string message))
+  (format T "2 ~a) ~a says ~a~%" room (name *user*) message))
+
+(define-easy-handler (say-yo :uri "/yo") (name)
+  (setf (content-type*) "text/plain")
     (format nil "Hey~@[ ~A~]!" name))
 
 (defun main (&rest argv)
   (declare (ignorable argv))
-
-  (start (make-instance
-	  'easy-acceptor :port 1234 :document-root "c/"))
-
+  (start (make-easy-websocket-acceptor 1234 "c/"))
   (sleep 1000000000))
 ;;; vim: set ft=lisp lisp:
