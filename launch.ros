@@ -9,6 +9,8 @@ exec ros -Q -- $0 "$@" # |#
   (:use :cl :hunchentoot :hunchensocket :websocket-driver :cffi))
 (in-package :ros.script.launch.3831993281)
 
+
+
 (defun main (&rest argv)
   (declare (ignorable argv))
 
