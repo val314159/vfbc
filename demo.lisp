@@ -10,7 +10,10 @@
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (ql:quickload :hunchensocket))
 
-(use-package '(:hunchensocket :hunchensocket))
+(use-package '(:hunchentoot :hunchensocket))
+
+(defclass easy-websocket-acceptor (websocket-acceptor easy-acceptor) ()
+  (:documentation "Special easy WebSocket acceptor"))
 
 (defclass chat-room (hunchensocket:websocket-resource)
   ((name :initarg :name :initform (error "Name this room!") :reader name))
@@ -18,7 +21,7 @@
 
 (defclass channel ()
   ((name :initarg :name :initform (error "Name this channel!") :reader name)
-   (users :accessor users :initform nil)))
+   (clients :accessor clients :initform nil)))
 
 (defclass user (hunchensocket:websocket-client)
   ((name :initarg :user-agent :reader name :initform (error "Name this user!"))))
@@ -75,7 +78,8 @@
 ;; just like `hunchentoot:acceptor`, and you can probably also use
 ;; `hunchensocket:websocket-ssl-acceptor`.
 
-(defvar *server* (make-instance 'hunchensocket:websocket-acceptor :port 1234))
+(defvar *server* (make-instance 'easy-websocket-acceptor
+				:port 1234 :document-root "c/"))
 
 (defun main (&rest argv)
   (declare (ignorable argv))
