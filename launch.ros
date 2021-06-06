@@ -27,7 +27,7 @@ exec ros -Q -- $0 "$@" # |#
 (defclass easy-websocket-acceptor (websocket-acceptor easy-acceptor) ()
   (:documentation "Special Easy WebSocket acceptor"))
 
-(defvar *user*)
+(defvar *user* nil)
 
 (defvar *channels* (list (make-instance 'channel :name ">b")
 			 (make-instance 'channel :name ">c")
@@ -47,24 +47,29 @@ exec ros -Q -- $0 "$@" # |#
 
 (defun find-channel (name)
   (find name *channels* :test #'string= :key #'name))
-
-(defun publish-all-but (user channel message &rest args)
+#|
+(defun publish-all-but (client ttl channel message &rest args)
   (loop for peer in (clients channel)
-     do (if (eq user peer) T
+     do (if (eq client peer) T
 	    (send-text-message peer (apply #'format nil message args)))))
 
-(defun publish (channel message &rest args)
+(defun publish (ttl channel message &rest args)
   (loop for peer in (clients channel)
      do (send-text-message peer (apply #'format nil message args))))
 
-(defun subscribe (user channels)
-  (loop for chan in channels
-     do (push user (users chan))))
+(apply 'format t "ASFSDF~%")
 
-(defun unsubscribe (user channels)
-  (loop for chan in channels
-     do (setf (users chan) (remove user (users chan)))))
+(defun pub (ttl channel message &rest args)
+  (apply #'publish-all-but *user* ttl channel message args))
 
+(defun subscribe (client channels)
+  (loop for chan in channels
+     do (push client (clients chan))))
+
+(defun unsubscribe (client channels)
+  (loop for chan in channels
+     do (setf (clients chan) (remove client (clients chan)))))
+|#
 (defun make-easy-websocket-acceptor (port document-root)
   (make-instance 'easy-websocket-acceptor
 		 :port port :document-root document-root))
@@ -97,8 +102,20 @@ exec ros -Q -- $0 "$@" # |#
   (setf (content-type*) "text/plain")
     (format nil "Hey~@[ ~A~]!" name))
 
+;;(define-easy-handler (pub :uri "/pub") (name)
+;;  (publish 5 (find-channel name) (raw-post-data))
+;;  (format nil "OK~%"))
+
+(defun start-thread (fn &optional (delay 0.01))
+  (sleep delay)
+  (bt:make-thread fn))
+
+(defun f1 ()
+  (format t "ASDFSD~%"))
+
 (defun main (&rest argv)
   (declare (ignorable argv))
   (start (make-easy-websocket-acceptor 1234 "c/"))
+  ;;(start-thread 'f1)
   (sleep 1000000000))
 ;;; vim: set ft=lisp lisp:
