@@ -6,15 +6,19 @@ exec ros -Q -- $0 "$@" # |#
   )
 
 (defpackage :ros.script.launch.3831993281
+  (:shadow :close-connection)
   (:use :cl :hunchentoot :hunchensocket :websocket-driver :cffi))
 (in-package :ros.script.launch.3831993281)
 
-
+(hunchentoot:define-easy-handler (say-yo :uri "/yo") (name)
+  (setf (hunchentoot:content-type*) "text/plain")
+    (format nil "Hey~@[ ~A~]!" name))
 
 (defun main (&rest argv)
   (declare (ignorable argv))
 
-  
-  
-  T)
+  (start (make-instance
+	  'easy-acceptor :port 1234 :document-root "c/"))
+
+  (sleep 1000000000))
 ;;; vim: set ft=lisp lisp:

@@ -1,1 +1,13 @@
 /* site.css */
+body {
+    //background: cyan;
+}
+pre {
+    background: cyan;
+}
+#out {
+    background: pink;
+}
+textarea {
+    background: yellow;
+}
