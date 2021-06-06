@@ -8,9 +8,9 @@
 (in-package :my-chat)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (ql:quickload :hunchensocket))
+  (ql:quickload '(:hunchensocket :websocket-driver-client) :silent t))
 
-(use-package '(:hunchentoot :hunchensocket))
+(use-package '(:hunchentoot :hunchensocket :websocket-driver-client))
 
 (defclass easy-websocket-acceptor (websocket-acceptor easy-acceptor) ()
   (:documentation "Special easy WebSocket acceptor"))
@@ -81,9 +81,45 @@
 (defvar *server* (make-instance 'easy-websocket-acceptor
 				:port 1234 :document-root "c/"))
 
+(defun check-blocks ()
+  (handler-case
+      (progn
+	(print "CHECK BLOCK")
+	(sleep 5))
+    (T (e)
+      (princ e)
+      (terpri)
+      (sleep 1)))
+  (check-blocks))
+
+(defun check-xactions ()
+  (handler-case
+      (progn
+	(print "CHECK XACTION")
+	(sleep 0.3))
+    (T (e)
+      (princ e)
+      (terpri)
+      (sleep 1)))
+  (check-xactions))
+
+(defun check-updates ()
+  (handler-case
+      (progn
+	(print "CHECK CODE UPDATE")
+	(sleep 10))
+    (T (e)
+      (princ e)
+      (terpri)
+      (sleep 1)))
+  (check-updates))
+
 (defun main (&rest argv)
   (declare (ignorable argv))
   (hunchentoot:start *server*)
+  (sleep 0.1)(bt:make-thread 'check-blocks)
+  (sleep 0.1)(bt:make-thread 'check-xactions)
+  (sleep 0.1)(bt:make-thread 'check-updates)
   (sleep 1000))
 
 ;; Now open two browser windows on http://www.websocket.org/echo.html,
