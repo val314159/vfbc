@@ -3,7 +3,7 @@ B=$C-1/-1/block.txt
 D=$C-1/-1/nxt/
 call: clean all
 all: c
-	ros demo.lisp
+	ros start.lisp
 #	c/-1/-1/nxt/launch.ros
 c:
 	mkdir -p $D
